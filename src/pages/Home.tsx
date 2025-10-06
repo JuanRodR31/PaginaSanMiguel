@@ -1,5 +1,7 @@
 import { Trophy, Users, Heart, Target } from 'lucide-react';
 
+import FondoHeader from '../components/assets/niñosjugando.jpg';
+
 interface HomeProps {
   onNavigate: (page: string) => void;
 }
@@ -8,8 +10,11 @@ export default function Home({ onNavigate }: HomeProps) {
   return (
     <div className="min-h-screen">
       <section className="relative h-[600px] bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 overflow-hidden">
-        <div className="absolute inset-0 bg-black opacity-20"></div>
-        <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/274506/pexels-photo-274506.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center mix-blend-overlay opacity-40"></div>
+        <div className="absolute inset-0 bg-black opacity-0"></div>
+         <div 
+                    className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-100"
+                    style={{ backgroundImage: `url(${FondoHeader})` }} // <-- ¡AQUÍ ESTÁ EL CAMBIO!
+          ></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <div className="text-white max-w-3xl">
