@@ -1,19 +1,34 @@
-import { Trophy, Users, Heart, Target } from 'lucide-react';
-import FondoHeader from '../components/assets/niñosjugando.jpeg';
+import { Trophy, Users, Heart } from 'lucide-react';
+// Use the existing image files in src/components/assets
+import FondoHeader from '@/components/assets/niñosjugando.jpg';
+import cibermeImg from '@/components/assets/patrocinadores/ciberme.png';
+import goodkImg from '@/components/assets/patrocinadores/goodk.png';
+import pollosImg from '@/components/assets/patrocinadores/pollos.jpg';
+import sanmarcoImg from '@/components/assets/patrocinadores/sanmarco.png';
+import sportgrassImg from '@/components/assets/patrocinadores/sportgrass.png';
 
 interface HomeProps {
   onNavigate: (page: string) => void;
 }
 
 export default function Home({ onNavigate }: HomeProps) {
+  const sponsors = [
+    { id: 1, name: 'Ciberme', image: cibermeImg },
+    { id: 2, name: 'GoodK', image: goodkImg },
+    { id: 3, name: 'Pollos', image: pollosImg },
+    { id: 4, name: 'San Marco', image: sanmarcoImg },
+    { id: 5, name: 'Sport Grass', image: sportgrassImg },
+  ];
+
   return (
     <div className="min-h-screen">
+      {/* Hero Section */}
       <section className="relative h-[600px] bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 overflow-hidden">
         <div className="absolute inset-0 bg-black opacity-0"></div>
-         <div 
-                    className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-100"
-                    style={{ backgroundImage: `url(${FondoHeader})` }} // <-- ¡AQUÍ ESTÁ EL CAMBIO!
-          ></div>
+        <div 
+          className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-100"
+          style={{ backgroundImage: `url(${FondoHeader})` }}
+        ></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <div className="text-white max-w-3xl">
@@ -40,51 +55,14 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </section>
-
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center group hover:transform hover:scale-105 transition-all">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4 group-hover:bg-blue-200 transition-colors">
-                <Trophy className="h-8 w-8 text-blue-700" />
-              </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">150+</h3>
-              <p className="text-gray-600">Jugadores Formados</p>
-            </div>
-
-            <div className="text-center group hover:transform hover:scale-105 transition-all">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4 group-hover:bg-orange-200 transition-colors">
-                <Users className="h-8 w-8 text-orange-700" />
-              </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">25</h3>
-              <p className="text-gray-600">Entrenadores Certificados</p>
-            </div>
-
-            <div className="text-center group hover:transform hover:scale-105 transition-all">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4 group-hover:bg-red-200 transition-colors">
-                <Heart className="h-8 w-8 text-red-700" />
-              </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">500+</h3>
-              <p className="text-gray-600">Familias Apoyadas</p>
-            </div>
-
-            <div className="text-center group hover:transform hover:scale-105 transition-all">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-full mb-4 group-hover:bg-slate-200 transition-colors">
-                <Target className="h-8 w-8 text-slate-700" />
-              </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">10</h3>
-              <p className="text-gray-600">Años de Trayectoria</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
+     
+      {/* Impact Section */}
       <section className="py-16 bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Nuestro Impacto</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Transformamos vidas a través del deporte, creando oportunidades y desarrollando valores fundamentales.
+              Transformamos vidas a través del deporte, la educación y la solidaridad, generando esperanza y construyendo comunidades más fuertes.
             </p>
           </div>
 
@@ -93,9 +71,9 @@ export default function Home({ onNavigate }: HomeProps) {
               <div className="text-blue-600 mb-4">
                 <Trophy className="h-12 w-12" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Excelencia Deportiva</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Formación Integral</h3>
               <p className="text-gray-600">
-                Entrenamiento profesional con metodologías de vanguardia para desarrollar el máximo potencial de cada jugador.
+                Impulsamos el desarrollo de niños y jóvenes mediante el fútbol y la educación, promoviendo valores que fortalecen su crecimiento personal y social.
               </p>
             </div>
 
@@ -103,9 +81,9 @@ export default function Home({ onNavigate }: HomeProps) {
               <div className="text-orange-600 mb-4">
                 <Users className="h-12 w-12" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Desarrollo Personal</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Oportunidades de Vida</h3>
               <p className="text-gray-600">
-                Formamos personas íntegras con valores de disciplina, respeto, trabajo en equipo y liderazgo.
+                Creamos espacios donde cada niño puede descubrir su talento, superar barreras y construir un futuro lleno de posibilidades.
               </p>
             </div>
 
@@ -113,27 +91,36 @@ export default function Home({ onNavigate }: HomeProps) {
               <div className="text-red-600 mb-4">
                 <Heart className="h-12 w-12" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Impacto Social</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Unidad y Esperanza</h3>
               <p className="text-gray-600">
-                Creamos oportunidades para jóvenes de diferentes comunidades, promoviendo la inclusión y el desarrollo social.
+                Fomentamos la unión, la empatía y la colaboración entre comunidades, sembrando amor y compromiso por un mundo más solidario.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-r from-slate-800 to-slate-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6">Únete a Nuestra Misión</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto text-gray-100">
-            Tu apoyo nos ayuda a seguir transformando vidas. Cada donación cuenta y hace la diferencia.
-          </p>
-          <button
-            onClick={() => onNavigate('donate')}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-10 rounded-lg transition-all transform hover:scale-105 shadow-lg text-lg"
-          >
-            Apoyar Ahora
-          </button>
+      {/* Sponsors Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Nos apoyan</h2>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 items-center">
+            {sponsors.map((sponsor) => (
+              <div 
+                key={sponsor.id}
+                className="flex items-center justify-center p-6 group hover:transform hover:scale-110 transition-all duration-300"
+              >
+                <img 
+                  src={sponsor.image} 
+                  alt={sponsor.name}
+                  style={{ maxHeight: '100px' }}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </div>
