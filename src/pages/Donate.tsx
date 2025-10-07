@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Heart, DollarSign, CheckCircle } from 'lucide-react';
-import { supabase, Donation } from '../lib/supabase';
+import { Donation, getDonations, getTotalDonations, insertDonation } from '../lib/api';
 
 export default function Donate() {
   const [donorName, setDonorName] = useState('');
@@ -20,13 +20,7 @@ export default function Donate() {
 
   async function loadRecentDonations() {
     try {
-      const { data, error } = await supabase
-        .from('donations')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
+      const data = await getDonations();
       setRecentDonations(data || []);
     } catch (error) {
       console.error('Error loading donations:', error);
@@ -35,13 +29,7 @@ export default function Donate() {
 
   async function loadTotalDonations() {
     try {
-      const { data, error } = await supabase
-        .from('donations')
-        .select('amount');
-
-      if (error) throw error;
-
-      const total = data?.reduce((sum, donation) => sum + Number(donation.amount), 0) || 0;
+      const total = await getTotalDonations();
       setTotalDonations(total);
     } catch (error) {
       console.error('Error loading total donations:', error);
@@ -59,15 +47,13 @@ export default function Donate() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from('donations').insert([
-        {
-          donor_name: donorName || 'Anónimo',
-          amount: Number(amount),
-          message: message,
-        },
-      ]);
+      const res = await insertDonation({
+        donor_name: donorName || 'Anónimo',
+        amount: Number(amount),
+        message: message,
+      });
 
-      if (error) throw error;
+      if (!res.success) throw res.error || new Error('Error inserting donation');
 
       setShowSuccess(true);
       setDonorName('');
@@ -87,6 +73,7 @@ export default function Donate() {
   }
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -289,7 +276,7 @@ export default function Donate() {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <p className="font-semibold text-gray-900">{donation.donor_name || 'Anónimo'}</p>
-                      <p className="text-sm text-gray-500">{formatDate(donation.created_at)}</p>
+                      <p className="text-sm text-gray-500">{formatDate(donation.created_at || '')}</p>
                     </div>
                     <span className="text-xl font-bold text-green-700">${Number(donation.amount).toLocaleString()}</span>
                   </div>

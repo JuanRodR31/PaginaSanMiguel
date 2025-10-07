@@ -16,7 +16,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
     { id: 'about', label: 'Sobre Nosotros' },
     { id: 'players', label: 'Jugadores' },
     { id: 'events', label: 'Eventos' },
-    { id: 'videos', label: 'Videos' },
+    { id: 'videos', label: 'Galería' },
     { id: 'donate', label: 'Donaciones' },
   ];
 

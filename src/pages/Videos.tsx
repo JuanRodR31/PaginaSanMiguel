@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Play, Video as VideoIcon } from 'lucide-react';
-import { supabase, Video } from '../lib/supabase';
+import { Video, getVideos } from '../lib/api';
 
 export default function Videos() {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -13,12 +13,7 @@ export default function Videos() {
 
   async function loadVideos() {
     try {
-      const { data, error } = await supabase
-        .from('videos')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await getVideos();
       setVideos(data || []);
     } catch (error) {
       console.error('Error loading videos:', error);

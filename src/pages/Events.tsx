@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Image as ImageIcon } from 'lucide-react';
-import { supabase, Event } from '../lib/supabase';
+import { Event, getEvents } from '../lib/api';
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -13,12 +13,7 @@ export default function Events() {
 
   async function loadEvents() {
     try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('event_date', { ascending: false });
-
-      if (error) throw error;
+      const data = await getEvents();
       setEvents(data || []);
     } catch (error) {
       console.error('Error loading events:', error);
@@ -75,7 +70,7 @@ export default function Events() {
                     <div className="flex flex-wrap gap-4 mb-4">
                       <div className="flex items-center text-gray-600">
                         <Calendar className="h-5 w-5 mr-2 text-green-700" />
-                        <span>{formatDate(event.event_date)}</span>
+                        <span>{formatDate(event.event_date || '')}</span>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <MapPin className="h-5 w-5 mr-2 text-green-700" />
@@ -144,7 +139,7 @@ export default function Events() {
 
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {selectedEvent.photos.map((photo, index) => (
+                {(selectedEvent.photos || []).map((photo, index) => (
                   <div key={index} className="relative h-64 rounded-lg overflow-hidden shadow-lg">
                     <img
                       src={photo}
