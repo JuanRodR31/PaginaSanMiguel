@@ -1,4 +1,4 @@
-import { Menu, X, Trophy } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
 import Logo from './assets/logosanmiguel.png';
@@ -11,7 +11,7 @@ interface NavigationProps {
 export default function Navigation({ currentPage, onNavigate }: NavigationProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const navItems = [
+   const navItems = [
     { id: 'home', label: 'Inicio' },
     { id: 'about', label: 'Sobre Nosotros' },
     { id: 'players', label: 'Jugadores' },
@@ -26,25 +26,27 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
   };
 
   return (
-    <nav className="bg-gradient-to-r from-slate-800 to-slate-900 shadow-lg sticky top-0 z-50">
+    <nav className="bg-gradient-to-r from-slate-700 via-slate-800 to-slate-900 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center cursor-pointer" onClick={() => handleNavigate('home')}>
             <img 
-            src={Logo} 
-            alt="Logo Fundación San Miguel" 
-            className="h-10 w-auto" // Ajusta la altura (h-10) y el ancho (w-auto) según necesites
+              src={Logo} 
+              alt="Logo Fundación San Miguel" 
+              className="h-10 w-auto"
             />
             <span className="ml-2 text-white text-xl font-bold">Fundación San Miguel</span>
           </div>
 
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden md:flex space-x-4">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
-                className={`text-white hover:text-orange-400 transition-colors px-3 py-2 rounded-md text-sm font-medium ${
-                  currentPage === item.id ? 'bg-slate-700 text-orange-400' : ''
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                  currentPage === item.id 
+                    ? 'bg-white text-[#192335]' 
+                    : 'text-white hover:bg-slate-700'
                 }`}
               >
                 {item.label}
@@ -70,8 +72,10 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
               <button
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
-                className={`block w-full text-left text-white hover:text-orange-400 hover:bg-slate-700 transition-colors px-3 py-2 rounded-md text-base font-medium ${
-                  currentPage === item.id ? 'bg-slate-700 text-orange-400' : ''
+                className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                  currentPage === item.id 
+                    ? 'bg-white text-[#192335]' 
+                    : 'text-white hover:bg-slate-700'
                 }`}
               >
                 {item.label}
