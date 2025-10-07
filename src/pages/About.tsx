@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Target, Heart, Users, Award, TrendingUp, Globe } from 'lucide-react';
-
-
+import aboutus from '@/components/assets/aboutus.jpeg';
+import SandraPhoto from '../components/assets/sandra.jpg';
+import LeonardoPhoto from '../components/assets/leonardo.jpg';
+import DanielaPhoto from '../components/assets/daniela.jpg';
 
 interface TeamMember {
   id: number;
@@ -9,12 +11,6 @@ interface TeamMember {
   role: string;
   photo_url: string; // La URL ahora será el path de la imagen importada
 }
-
-
-import SandraPhoto from '../components/assets/sandra.jpg';
-import LeonardoPhoto from '../components/assets/leonardo.jpg';
-import DanielaPhoto from '../components/assets/daniela.jpg';
-
 
 // Datos locales de ejemplo (simulando la carga de la base de datos)
 const localTeamMembers: TeamMember[] = [
@@ -63,12 +59,15 @@ export default function About() {
       
       {/* Sección 1: Encabezado */}
       <section className="relative h-[400px] bg-gradient-to-r from-slate-700 to-slate-900 overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/262524/pexels-photo-262524.jpeg?auto=compress&cs=tinysrgb&w=1920')] bg-cover bg-center mix-blend-overlay opacity-30"></div>
+        <div 
+          className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-75"
+          style={{ backgroundImage: `url(${aboutus})` }}
+        ></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <div className="text-white">
             <h1 className="text-5xl md:text-6xl font-bold mb-4">Sobre Nosotros</h1>
             <p className="text-xl md:text-2xl text-gray-100">
-              Construyendo sueños y formando campeones desde 2014
+              En la Fundación San Miguel promovemos valores que inspiran amor, resiliencia y trabajo en equipo, construyendo un entorno donde cada niño y joven pueda crecer con esperanza.
             </p>
           </div>
         </div>
@@ -78,21 +77,17 @@ export default function About() {
       <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">Nuestra Historia</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-6">Nuestra esencia</h2>
             <div className="space-y-4 text-gray-700 leading-relaxed">
               <p>
                 Nuestra escuela de fútbol nació del sueño de crear oportunidades para niños y jóvenes
                 apasionados por el deporte, brindándoles las herramientas necesarias para desarrollar su máximo potencial.
               </p>
               <p>
-                Lo que comenzó como un pequeño grupo de entrenadores dedicados se ha convertido en una fundación que ha
-                impactado la vida de cientos de familias, formando no solo jugadores excepcionales, sino también personas
-                de carácter íntegro y valores sólidos.
+                Creemos que el deporte puede ser un camino hacia la esperanza, la disciplina y la unión. 
+                Cada entrenamiento, sonrisa y logro reflejan nuestro compromiso con los niños y jóvenes que buscan un futuro mejor. En cada jugada sembramos valores, construimos comunidad y demostramos que el verdadero triunfo está en crecer juntos.
               </p>
-              <p>
-                Hoy, somos reconocidos por nuestra metodología de entrenamiento, nuestro compromiso con la excelencia
-                deportiva y nuestra pasión por el desarrollo integral de cada uno de nuestros jugadores.
-              </p>
+              
             </div>
           </div>
 

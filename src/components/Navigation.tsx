@@ -33,7 +33,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
             <img 
               src={Logo} 
               alt="Logo Fundación San Miguel" 
-              className="h-10 w-auto"
+              className="h-12 w-auto"
             />
             <span className="ml-2 text-white text-xl font-bold">Fundación San Miguel</span>
           </div>

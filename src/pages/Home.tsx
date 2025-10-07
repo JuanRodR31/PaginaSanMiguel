@@ -1,6 +1,6 @@
 import { Trophy, Users, Heart } from 'lucide-react';
 // Use the existing image files in src/components/assets
-import FondoHeader from '@/components/assets/niñosjugando.jpg';
+import FondoHeader from '@/components/assets/niñosjugando.jpeg';
 import cibermeImg from '@/components/assets/patrocinadores/ciberme.png';
 import goodkImg from '@/components/assets/patrocinadores/goodk.png';
 import pollosImg from '@/components/assets/patrocinadores/pollos.jpg';
