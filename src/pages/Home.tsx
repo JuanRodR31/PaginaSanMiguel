@@ -1,6 +1,5 @@
 import { Trophy, Users, Heart, Target } from 'lucide-react';
-
-import FondoHeader from '../components/assets/niñosjugando.jpg';
+import FondoHeader from '../components/assets/niñosjugando.jpeg';
 
 interface HomeProps {
   onNavigate: (page: string) => void;
@@ -19,10 +18,10 @@ export default function Home({ onNavigate }: HomeProps) {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <div className="text-white max-w-3xl">
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              Formando Campeones del Futuro
+              Formando campeones del futuro
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-gray-100">
-              Una fundación dedicada a desarrollar talento, construir sueños y transformar vidas a través del fútbol.
+              Una fundación dedicada a desarrollar talento, construir sueños y transformar vidas con amor, deporte y esperanza.
             </p>
             <div className="flex flex-wrap gap-4">
               <button
