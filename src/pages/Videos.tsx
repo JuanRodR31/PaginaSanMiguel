@@ -1,6 +1,14 @@
+// ...existing code...
 import { useState, useEffect } from 'react';
 import { Play, Video as VideoIcon } from 'lucide-react';
-import { Video, getVideos } from '../lib/api';
+
+type Video = {
+  id: number | string;
+  title: string;
+  description?: string;
+  thumbnail_url?: string;
+  video_url?: string;
+};
 
 export default function Videos() {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -8,20 +16,11 @@ export default function Videos() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
 
   useEffect(() => {
-    loadVideos();
+    // getVideos está comentado en api.ts por ahora; no hacemos fetch
+    setLoading(false);
   }, []);
 
-  async function loadVideos() {
-    try {
-      const data = await getVideos();
-      setVideos(data || []);
-    } catch (error) {
-      console.error('Error loading videos:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // ...existing code...
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -114,3 +113,4 @@ export default function Videos() {
     </div>
   );
 }
+// ...existing code...

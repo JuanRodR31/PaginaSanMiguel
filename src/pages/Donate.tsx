@@ -1,6 +1,71 @@
+// ...existing code...
 import { useState, useEffect } from 'react';
 import { Heart, DollarSign, CheckCircle } from 'lucide-react';
-import { Donation, getDonations, getTotalDonations, insertDonation } from '../lib/api';
+
+// Local Donation type + in-memory (and localStorage) mock to avoid APIs
+export type Donation = {
+  id: number;
+  donor_name?: string;
+  amount: number;
+  message?: string;
+  created_at?: string;
+};
+
+const STORAGE_KEY = 'mockDonations_v1';
+let mockDonations: Donation[] = [];
+
+// initialize from localStorage
+function loadMockFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Donation[];
+      mockDonations = Array.isArray(parsed) ? parsed : [];
+    } else {
+      mockDonations = [];
+    }
+  } catch {
+    mockDonations = [];
+  }
+}
+function saveMockToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockDonations));
+  } catch {
+    // ignore
+  }
+}
+
+// Local API-like helpers (sync/async shape preserved)
+export async function getDonations(): Promise<Donation[]> {
+  loadMockFromStorage();
+  // return sorted by created_at desc
+  return mockDonations.slice().sort((a, b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tb - ta;
+  });
+}
+
+export async function getTotalDonations(): Promise<number> {
+  loadMockFromStorage();
+  return mockDonations.reduce((sum, d) => sum + Number(d.amount || 0), 0);
+}
+
+export async function insertDonation(payload: { donor_name?: string; amount: number; message?: string }) {
+  const newDonation: Donation = {
+    id: Date.now(),
+    donor_name: payload.donor_name,
+    amount: Number(payload.amount || 0),
+    message: payload.message,
+    created_at: new Date().toISOString(),
+  };
+  loadMockFromStorage();
+  mockDonations.unshift(newDonation);
+  saveMockToStorage();
+  return { success: true, donation: newDonation };
+}
+// ...existing code...
 
 export default function Donate() {
   const [donorName, setDonorName] = useState('');
@@ -14,8 +79,10 @@ export default function Donate() {
   const suggestedAmounts = [10, 25, 50, 100];
 
   useEffect(() => {
+    // load from local mock store
     loadRecentDonations();
     loadTotalDonations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadRecentDonations() {
@@ -53,7 +120,7 @@ export default function Donate() {
         message: message,
       });
 
-      if (!res.success) throw res.error || new Error('Error inserting donation');
+      
 
       setShowSuccess(true);
       setDonorName('');
@@ -240,7 +307,7 @@ export default function Donate() {
                 <div>
                   <h3 className="font-bold text-gray-900 text-lg mb-1">Becas</h3>
                   <p className="text-gray-600">
-                    Apoyamos a jóvenes talentosos de familias con recursos limitados para que puedan continuar entrenando.
+                    Apoyamos a jóvenes talentosos de familias con recursos limitadas para que puedan continuar entrenando.
                   </p>
                 </div>
               </div>
@@ -292,3 +359,4 @@ export default function Donate() {
     </div>
   );
 }
+// ...existing code...
