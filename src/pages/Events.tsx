@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Image as ImageIcon } from 'lucide-react';
+import { Calendar, MapPin } from 'lucide-react';
 import { Event, getEvents } from '../lib/api';
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   useEffect(() => {
     loadEvents();
@@ -22,19 +21,52 @@ export default function Events() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
+    const parseDateSafe = (dateInput?: string | number | null) => {
+    if (!dateInput && dateInput !== 0) return null;
+    // Si ya es número (timestamp) o Date-like
+    if (typeof dateInput === "number") return new Date(dateInput);
+    // Normalizar si viene como "2025-12-15" (YYYY-MM-DD)
+    const dateString = String(dateInput);
+    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+      ? `${dateString}T00:00:00Z`
+      : dateString;
+    const d = new Date(normalized);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  const formatDate = (dateString?: string | null) => {
+    const d = parseDateSafe(dateString);
+    if (!d) return dateString ?? null;
+    return d.toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
   };
 
+  // Si algún evento tiene inicio/fin, se mostrará "10–12 de junio de 2024".
+  const formatDateRange = (start?: string | null, end?: string | null) => {
+    const ds = parseDateSafe(start);
+    const de = parseDateSafe(end);
+    if (ds && de) {
+      const sameMonth = ds.getMonth() === de.getMonth() && ds.getFullYear() === de.getFullYear();
+      const opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+      if (sameMonth) {
+        const startDay = ds.toLocaleDateString('es-ES', { day: 'numeric' });
+        const tail = de.toLocaleDateString('es-ES', { ...opts });
+        // tail ya incluye "de junio de 2024", así que concatenamos "10–12 de junio de 2024"
+        return `${startDay}–${tail}`;
+      }
+      return `${ds.toLocaleDateString('es-ES', opts)} – ${de.toLocaleDateString('es-ES', opts)}`;
+    }
+    // Fallback a una sola fecha (event_date)
+    return formatDate(start || end || undefined);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-green-700"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-green-700" />
       </div>
     );
   }
@@ -55,104 +87,85 @@ export default function Events() {
             <p className="text-xl text-gray-600">Próximamente compartiremos nuestros eventos.</p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {events.map((event) => (
-              <div
-                key={event.id}
-                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow"
-              >
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-                  <div className="lg:col-span-2">
-                    <div className="flex items-start justify-between mb-4">
-                      <h2 className="text-3xl font-bold text-gray-900">{event.title}</h2>
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {events.map((event) => {
+              const cover =
+                event.photos && event.photos.length > 0 ? event.photos[0] : undefined;
 
-                    <div className="flex flex-wrap gap-4 mb-4">
-                      <div className="flex items-center text-gray-600">
-                        <Calendar className="h-5 w-5 mr-2 text-green-700" />
-                        <span>{formatDate(event.event_date || '')}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <MapPin className="h-5 w-5 mr-2 text-green-700" />
-                        <span>{event.location}</span>
-                      </div>
-                    </div>
+              // Soporta event.event_date o (event.start_date / event.end_date) si existieran:
+              const startRaw = (event as any).start_date ?? (event as any).startDate ?? event.event_date ?? null;
+              const endRaw = (event as any).end_date ?? (event as any).endDate ?? null;
 
-                    <p className="text-gray-700 leading-relaxed mb-6">{event.description}</p>
+              // Soporta event.event_date o (event.start_date / event.end_date) si existieran:
+              const humanDate = formatDateRange(startRaw || event.event_date, endRaw);
+               const isoDateAttr =
+                parseDateSafe(event.event_date)?.toISOString() ??
+                parseDateSafe(startRaw)?.toISOString() ??
+                parseDateSafe(endRaw)?.toISOString() ??
+                undefined;
 
-                    {event.photos && event.photos.length > 0 && (
-                      <button
-                        onClick={() => setSelectedEvent(event)}
-                        className="flex items-center text-green-700 hover:text-green-900 font-semibold transition-colors"
-                      >
-                        <ImageIcon className="h-5 w-5 mr-2" />
-                        Ver fotos del evento ({event.photos.length})
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="lg:col-span-1">
-                    {event.photos && event.photos.length > 0 ? (
-                      <div className="relative h-64 lg:h-full rounded-lg overflow-hidden shadow-md">
-                        <img
-                          src={event.photos[0]}
-                          alt={event.title}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        />
-                        {event.photos.length > 1 && (
-                          <div className="absolute bottom-4 right-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                            +{event.photos.length - 1} fotos
-                          </div>
-                        )}
-                      </div>
+              return (
+                <article
+                  key={event.id}
+                  className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                >
+                  {/* Imagen principal */}
+                  <div className="relative w-full h-56 bg-gray-100">
+                    {cover ? (
+                      <img
+                        src={cover}
+                        alt={event.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
                     ) : (
-                      <div className="h-64 lg:h-full bg-gradient-to-br from-green-500 to-green-700 rounded-lg flex items-center justify-center">
-                        <Calendar className="h-16 w-16 text-white opacity-50" />
+                      <div className="flex h-full w-full items-center justify-center text-gray-300">
+                        <Calendar className="h-16 w-16" />
+                      </div>
+                    )}
+
+                    {/* Píldora con la fecha (superpuesta) */}
+                    {humanDate && (
+                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full shadow text-sm font-semibold text-gray-800">
+                        <time dateTime={isoDateAttr}>{humanDate}</time>
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
-            ))}
+
+                  {/* Contenido de la tarjeta */}
+                  <div className="p-5">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3 leading-tight">
+                      {event.title}
+                    </h3>
+
+                    <div className="space-y-2 mb-3">
+                      {humanDate && (
+                        <div className="flex items-center text-gray-600 text-sm">
+                          <Calendar className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
+                          <span><time dateTime={isoDateAttr}>{humanDate}</time></span>
+                        </div>
+                      )}
+
+                      {event.location && (
+                        <div className="flex items-center text-gray-600 text-sm">
+                          <MapPin className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {event.description && (
+                      <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">
+                        {event.description}
+                      </p>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
-
-      {selectedEvent && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedEvent(null)}
-        >
-          <div
-            className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-2xl font-bold text-gray-900">{selectedEvent.title}</h3>
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="text-gray-500 hover:text-gray-700 text-3xl font-bold"
-              >
-                &times;
-              </button>
-            </div>
-
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(selectedEvent.photos || []).map((photo, index) => (
-                  <div key={index} className="relative h-64 rounded-lg overflow-hidden shadow-lg">
-                    <img
-                      src={photo}
-                      alt={`${selectedEvent.title} - Foto ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
