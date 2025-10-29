@@ -66,7 +66,7 @@ export default function Events() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-green-700" />
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-900" />
       </div>
     );
   }
@@ -141,14 +141,14 @@ export default function Events() {
                     <div className="space-y-2 mb-3">
                       {humanDate && (
                         <div className="flex items-center text-gray-600 text-sm">
-                          <Calendar className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
+                          <Calendar className="h-4 w-4 mr-2 text-blue-900 flex-shrink-0" />
                           <span><time dateTime={isoDateAttr}>{humanDate}</time></span>
                         </div>
                       )}
 
                       {event.location && (
                         <div className="flex items-center text-gray-600 text-sm">
-                          <MapPin className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
+                          <MapPin className="h-4 w-4 mr-2 text-blue-900 flex-shrink-0" />
                           <span>{event.location}</span>
                         </div>
                       )}
