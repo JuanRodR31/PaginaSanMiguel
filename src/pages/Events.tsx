@@ -21,16 +21,20 @@ export default function Events() {
     }
   }
 
-    const parseDateSafe = (dateInput?: string | number | null) => {
+  const parseDateSafe = (dateInput?: string | number | null) => {
     if (!dateInput && dateInput !== 0) return null;
-    // Si ya es número (timestamp) o Date-like
+    
     if (typeof dateInput === "number") return new Date(dateInput);
-    // Normalizar si viene como "2025-12-15" (YYYY-MM-DD)
+    
     const dateString = String(dateInput);
-    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
-      ? `${dateString}T00:00:00Z`
-      : dateString;
-    const d = new Date(normalized);
+    
+    // Si es formato YYYY-MM-DD, parsearlo como fecha local, no UTC
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    
+    const d = new Date(dateString);
     return Number.isNaN(d.getTime()) ? null : d;
   };
 
@@ -44,22 +48,27 @@ export default function Events() {
     });
   };
 
-  // Si algún evento tiene inicio/fin, se mostrará "10–12 de junio de 2024".
   const formatDateRange = (start?: string | null, end?: string | null) => {
     const ds = parseDateSafe(start);
     const de = parseDateSafe(end);
+    
     if (ds && de) {
+      // Si las fechas son el mismo día, mostrar solo una vez
+      if (ds.getFullYear() === de.getFullYear() && 
+          ds.getMonth() === de.getMonth() && 
+          ds.getDate() === de.getDate()) {
+        return formatDate(start);
+      }
+      
       const sameMonth = ds.getMonth() === de.getMonth() && ds.getFullYear() === de.getFullYear();
       const opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
       if (sameMonth) {
         const startDay = ds.toLocaleDateString('es-ES', { day: 'numeric' });
         const tail = de.toLocaleDateString('es-ES', { ...opts });
-        // tail ya incluye "de junio de 2024", así que concatenamos "10–12 de junio de 2024"
         return `${startDay}–${tail}`;
       }
       return `${ds.toLocaleDateString('es-ES', opts)} – ${de.toLocaleDateString('es-ES', opts)}`;
     }
-    // Fallback a una sola fecha (event_date)
     return formatDate(start || end || undefined);
   };
 
@@ -92,13 +101,11 @@ export default function Events() {
               const cover =
                 event.photos && event.photos.length > 0 ? event.photos[0] : undefined;
 
-              // Soporta event.event_date o (event.start_date / event.end_date) si existieran:
               const startRaw = (event as any).start_date ?? (event as any).startDate ?? event.event_date ?? null;
               const endRaw = (event as any).end_date ?? (event as any).endDate ?? null;
 
-              // Soporta event.event_date o (event.start_date / event.end_date) si existieran:
               const humanDate = formatDateRange(startRaw || event.event_date, endRaw);
-               const isoDateAttr =
+              const isoDateAttr =
                 parseDateSafe(event.event_date)?.toISOString() ??
                 parseDateSafe(startRaw)?.toISOString() ??
                 parseDateSafe(endRaw)?.toISOString() ??
@@ -121,13 +128,6 @@ export default function Events() {
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-gray-300">
                         <Calendar className="h-16 w-16" />
-                      </div>
-                    )}
-
-                    {/* Píldora con la fecha (superpuesta) */}
-                    {humanDate && (
-                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full shadow text-sm font-semibold text-gray-800">
-                        <time dateTime={isoDateAttr}>{humanDate}</time>
                       </div>
                     )}
                   </div>

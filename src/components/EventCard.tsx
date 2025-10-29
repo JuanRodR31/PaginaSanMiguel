@@ -22,10 +22,29 @@ function classNames(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
 }
 
+// Parsear fecha correctamente evitando problemas de zona horaria
+function parseDateSafe(dateInput?: string | number | Date | null) {
+  if (!dateInput && dateInput !== 0) return null;
+  
+  if (dateInput instanceof Date) return dateInput;
+  if (typeof dateInput === "number") return new Date(dateInput);
+  
+  const dateString = String(dateInput);
+  
+  // Si es formato YYYY-MM-DD, parsearlo como fecha local, no UTC
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  
+  const d = new Date(dateString);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function formatDate(dateStr?: string | number | Date | null) {
-  if (!dateStr && dateStr !== 0) return null;
-  const d = dateStr instanceof Date ? dateStr : new Date(dateStr as any);
-  if (Number.isNaN(d.getTime())) return String(dateStr);
+  const d = parseDateSafe(dateStr);
+  if (!d) return null;
+  
   return d.toLocaleDateString('es-ES', {
     year: "numeric",
     month: "long",
@@ -34,9 +53,17 @@ function formatDate(dateStr?: string | number | Date | null) {
 }
 
 function formatDateRange(start?: string | number | Date | null, end?: string | number | Date | null) {
-  const ds = start ? (start instanceof Date ? start : new Date(start as any)) : null;
-  const de = end ? (end instanceof Date ? end : new Date(end as any)) : null;
+  const ds = parseDateSafe(start);
+  const de = parseDateSafe(end);
+  
   if (ds && de && !Number.isNaN(ds.getTime()) && !Number.isNaN(de.getTime())) {
+    // Si las fechas son el mismo día, mostrar solo una vez
+    if (ds.getFullYear() === de.getFullYear() && 
+        ds.getMonth() === de.getMonth() && 
+        ds.getDate() === de.getDate()) {
+      return formatDate(start);
+    }
+    
     const sameMonth = ds.getMonth() === de.getMonth() && ds.getFullYear() === de.getFullYear();
     const opts: Intl.DateTimeFormatOptions = { year: "numeric", month: "long", day: "numeric" };
     if (sameMonth) {
