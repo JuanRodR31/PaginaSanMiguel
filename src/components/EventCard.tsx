@@ -9,8 +9,6 @@ export interface Event {
   endDate?: string;
   location?: string;
   photos?: string[]; 
-  status?: string;
-  link?: string; // Enlace de redes sociales o evento externo
   foundationId?: number | string | null;
 }
 
@@ -52,7 +50,7 @@ function formatDateRange(start?: string | number | Date | null, end?: string | n
 }
 
 export default function EventCard({ event, className, onClick }: EventCardProps) {
-  const { id, title, description, event_date, location, photos, link: socialMediaLink } = event;
+  const { id, title, description, event_date, location, photos} = event;
   const cover = photos && photos.length > 0 ? photos[0] : undefined;
   const startRaw = (event as any).start_date ?? (event as any).startDate ?? event_date ?? null;
   const endRaw = (event as any).end_date ?? (event as any).endDate ?? null;
@@ -120,18 +118,7 @@ export default function EventCard({ event, className, onClick }: EventCardProps)
           </p>
         )}
 
-        {/* Hipervínculo a redes sociales */}
-        {socialMediaLink && (
-          <a
-            href={socialMediaLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Mira más fotos del evento!
-          </a>
-        )}
+        
       </div>
     </article>
   );

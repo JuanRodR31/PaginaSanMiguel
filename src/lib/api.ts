@@ -18,8 +18,6 @@ export interface Event {
   end_date?: string;
   location?: string;
   photos?: string[];
-  status?: string;
-  link?: string;
   foundationId?: number | string | null;
 }
 // export interface Video {
@@ -40,8 +38,6 @@ export interface EventDTO {
   end_date?: string | null;
   location?: string;
   photos?: string[]; 
-  status?: string;
-  link?: string;
   foundationId?: number | string | null;
 }
 
