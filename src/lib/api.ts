@@ -132,7 +132,7 @@ function normalizeEventDTO(d: any): Event {
   const link = d.link ?? d.url ?? d.event_url ?? undefined;
   const foundationId = d.foundationId ?? d.foundation_id ?? (d.foundation && (d.foundation.id ?? d.foundationId)) ?? undefined;
 
-  return { id, title, description, event_date: event_date ?? undefined, start_date, end_date, location, photos, status, link, foundationId };
+  return { id, title, description, event_date: event_date ?? undefined, start_date, end_date, location, photos, foundationId };
 }
 
 // function normalizeVideoDTO(d: any): Video {
