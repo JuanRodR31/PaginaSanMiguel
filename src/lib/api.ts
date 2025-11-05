@@ -28,22 +28,39 @@ export interface EventDTO {
 
 let mockEvents: Event[] = [];
 
+function getAuthToken(): string | null {
+  return localStorage.getItem('token');
+}
+
 async function tryFetchJson(url: string, opts?: RequestInit) {
   try {
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      ...(opts?.headers as Record<string, string>),
+    };
+
+    // Set Content-Type for non-GET requests or if not already set
+    if (opts?.method && opts.method !== 'GET' && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // Add Authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const resp = await fetch(url, {
       ...opts,
-      credentials: 'include', // <-- AGREGAR ESTA LÍNEA
-      headers: {
-        'Content-Type': 'application/json',
-        ...opts?.headers,
-      },
+      credentials: 'include',
+      headers,
     });
 
     // Manejo explícito de 401: no lanzar, registrar y opcionalmente redirigir a login
+    // Solo redirigir si es una operación que requiere autenticación (no GET)
     if (resp.status === 401) {
-      console.warn(`Unauthorized (401) when requesting ${url}`);
-      // Si la app es cliente y queremos forzar login:
-      if (typeof window !== 'undefined') {
+      console.warn(`Unauthorized (401) when requesting ${url}`, opts?.method);
+      // Solo redirigir si no es un GET request (GET requests públicos no deberían requerir auth)
+      if (typeof window !== 'undefined' && opts?.method && opts.method !== 'GET') {
         const path = window.location.pathname || '/';
         if (!path.startsWith('/login')) {
           // redirige al login para re-autenticación (evita bucles)
@@ -115,6 +132,31 @@ export async function getEvents(): Promise<Event[]> {
   const data = await tryFetchJson('/api/events');
   if (Array.isArray(data)) return data.map((d) => normalizeEventDTO(d));
   return mockEvents;
+}
+
+export async function createEvent(event: Partial<EventDTO>): Promise<Event | null> {
+  const data = await tryFetchJson('/api/events', {
+    method: 'POST',
+    body: JSON.stringify(event),
+  });
+  if (data) return normalizeEventDTO(data);
+  return null;
+}
+
+export async function updateEvent(id: number | string, event: Partial<EventDTO>): Promise<Event | null> {
+  const data = await tryFetchJson(`/api/events/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(event),
+  });
+  if (data) return normalizeEventDTO(data);
+  return null;
+}
+
+export async function deleteEvent(id: number | string): Promise<boolean> {
+  const result = await tryFetchJson(`/api/events/${id}`, {
+    method: 'DELETE',
+  });
+  return result !== null;
 }
 
 export function seedMocks({
@@ -254,6 +296,108 @@ export async function getAllGalleryPhotos(): Promise<GalleryItem[]> {
   });
   
   return allPhotos;
+}
+
+/**
+ * Sube fotos a una galería
+ * @param galleryId ID de la galería
+ * @param images Array de archivos de imagen
+ */
+export async function uploadPhotosToGallery(galleryId: number, images: File[]): Promise<Gallery | null> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('No autenticado');
+  }
+
+  const formData = new FormData();
+  images.forEach((image) => {
+    formData.append('images', image);
+  });
+
+  const response = await fetch(`/api/${galleryId}/photos`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    return normalizeGallery(data);
+  }
+  return null;
+}
+
+/**
+ * Elimina una foto de la galería actualizando la lista
+ */
+export async function deletePhotoFromGallery(galleryId: number, photoUrl: string): Promise<Gallery | null> {
+  // Obtener la galería actual para obtener la lista de fotos
+  const gallery = await getGallery();
+  if (!gallery) {
+    // Si no hay galería principal, intentar obtener la específica por ID
+    const specificGallery = await tryFetchJson(`/api/${galleryId}`);
+    if (!specificGallery) return null;
+    const galleryToUse = normalizeGallery(specificGallery);
+    const updatedPhotos = galleryToUse.photos.filter((url) => {
+      const photoFileName = photoUrl.split('/').pop()?.split('?')[0];
+      const urlFileName = url.split('/').pop()?.split('?')[0];
+      return photoFileName !== urlFileName;
+    });
+    const data = await tryFetchJson(`/api/${galleryId}/photos`, {
+      method: 'PUT',
+      body: JSON.stringify({ id: galleryId, photos: updatedPhotos }),
+    });
+    if (data) return normalizeGallery(data);
+    return null;
+  }
+
+  // Filtrar la foto a eliminar
+  const updatedPhotos = gallery.photos.filter((url) => {
+    // Extraer solo el nombre del archivo de la URL para comparar
+    const photoFileName = photoUrl.split('/').pop()?.split('?')[0];
+    const urlFileName = url.split('/').pop()?.split('?')[0];
+    return photoFileName !== urlFileName;
+  });
+
+  // Actualizar la galería usando PUT
+  const data = await tryFetchJson(`/api/${galleryId}/photos`, {
+    method: 'PUT',
+    body: JSON.stringify({ id: galleryId, photos: updatedPhotos }),
+  });
+
+  if (data) {
+    return normalizeGallery(data);
+  }
+  return null;
+}
+
+/**
+ * Sube una imagen al servidor
+ */
+export async function uploadImage(image: File): Promise<string | null> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('No autenticado');
+  }
+
+  const formData = new FormData();
+  formData.append('image', image);
+
+  const response = await fetch('/image', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (response.ok) {
+    const fileName = await response.text();
+    return fileName;
+  }
+  return null;
 }
 
 /**

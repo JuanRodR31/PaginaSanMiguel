@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Image as ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getGallery, type GalleryItem } from '@/lib/api';
+import { Image as ImageIcon, X, ChevronLeft, ChevronRight, Plus, Trash2, Upload } from 'lucide-react';
+import { getGallery, type GalleryItem, uploadPhotosToGallery, deletePhotoFromGallery, type Gallery } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Videos() {
   const [photos, setPhotos] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [imageError, setImageError] = useState<Set<string>>(new Set());
+  const [galleryId, setGalleryId] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     loadGallery();
@@ -17,13 +21,35 @@ export default function Videos() {
       setLoading(true);
       const gallery = await getGallery();
       
-      if (gallery && gallery.photos && gallery.photos.length > 0) {
-        // Convierte el array de URLs a GalleryItems
-        const items: GalleryItem[] = gallery.photos.map((url, index) => ({
-          url,
-          id: `photo-${index}`
-        }));
-        setPhotos(items);
+      if (gallery) {
+        setGalleryId(gallery.id);
+        if (gallery.photos && gallery.photos.length > 0) {
+          // Convierte el array de URLs a GalleryItems
+          const items: GalleryItem[] = gallery.photos.map((url, index) => ({
+            url,
+            id: `photo-${index}`
+          }));
+          setPhotos(items);
+        } else {
+          setPhotos([]);
+        }
+      } else {
+        // Si no hay galería, intentar obtener todas las galerías y usar la primera
+        const { getGalleries } = await import('@/lib/api');
+        const galleries = await getGalleries();
+        if (galleries && galleries.length > 0) {
+          const firstGallery = galleries[0];
+          setGalleryId(firstGallery.id);
+          if (firstGallery.photos && firstGallery.photos.length > 0) {
+            const items: GalleryItem[] = firstGallery.photos.map((url, index) => ({
+              url,
+              id: `photo-${index}`
+            }));
+            setPhotos(items);
+          } else {
+            setPhotos([]);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading gallery:', error);
@@ -34,6 +60,49 @@ export default function Videos() {
 
   const handleImageError = (url: string) => {
     setImageError(prev => new Set(prev).add(url));
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !galleryId) return;
+
+    try {
+      setUploading(true);
+      const fileArray = Array.from(files);
+      const result = await uploadPhotosToGallery(galleryId, fileArray);
+      
+      if (result) {
+        await loadGallery();
+        alert('Fotos subidas exitosamente');
+      } else {
+        alert('Error al subir las fotos');
+      }
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+      alert('Error al subir las fotos');
+    } finally {
+      setUploading(false);
+      // Reset input
+      e.target.value = '';
+    }
+  };
+
+  const handleDeletePhoto = async (photoUrl: string) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta foto?')) return;
+    if (!galleryId) return;
+
+    try {
+      const result = await deletePhotoFromGallery(galleryId, photoUrl);
+      if (result) {
+        await loadGallery();
+        alert('Foto eliminada exitosamente');
+      } else {
+        alert('Error al eliminar la foto');
+      }
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      alert('Error al eliminar la foto');
+    }
   };
 
   const openLightbox = (index: number) => {
@@ -83,6 +152,23 @@ export default function Videos() {
           </p>
         </div>
 
+        {isAuthenticated && (
+          <div className="mb-6 flex justify-end">
+            <label className="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg transition-all cursor-pointer">
+              <Upload className="h-5 w-5" />
+              <span>{uploading ? 'Subiendo...' : 'Subir Fotos'}</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+            </label>
+          </div>
+        )}
+
         {photos.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-lg">
             <ImageIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -93,24 +179,41 @@ export default function Videos() {
             {photos.map((photo, index) => (
               <div
                 key={photo.id}
-                className="relative aspect-square bg-white rounded-lg shadow-md overflow-hidden cursor-pointer group hover:shadow-xl transition-all duration-300"
-                onClick={() => openLightbox(index)}
+                className="relative aspect-square bg-white rounded-lg shadow-md overflow-hidden group hover:shadow-xl transition-all duration-300"
               >
-                {!imageError.has(photo.url) ? (
-                  <>
-                    <img
-                      src={photo.url}
-                      alt={`Foto ${index + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      onError={() => handleImageError(photo.url)}
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300" />
-                  </>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                    <ImageIcon className="h-12 w-12 text-gray-400" />
-                  </div>
+                <div
+                  className="w-full h-full cursor-pointer"
+                  onClick={() => openLightbox(index)}
+                >
+                  {!imageError.has(photo.url) ? (
+                    <>
+                      <img
+                        src={photo.url}
+                        alt={`Foto ${index + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onError={() => handleImageError(photo.url)}
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300" />
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <ImageIcon className="h-12 w-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
+                {isAuthenticated && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePhoto(photo.url);
+                    }}
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-10"
+                    title="Eliminar foto"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 )}
               </div>
             ))}

@@ -1,10 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin } from 'lucide-react';
-import { Event, getEvents } from '../lib/api';
+import { Calendar, MapPin, Plus, Edit, Trash2, X } from 'lucide-react';
+import { Event, getEvents, createEvent, updateEvent, deleteEvent, EventDTO } from '../lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const { isAuthenticated } = useAuth();
+
+  // Form state
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    start_date: '',
+    end_date: '',
+    location: '',
+  });
 
   useEffect(() => {
     loadEvents();
@@ -21,6 +34,80 @@ export default function Events() {
     }
   }
 
+  const handleCreateClick = () => {
+    setEditingEvent(null);
+    setFormData({
+      title: '',
+      description: '',
+      start_date: '',
+      end_date: '',
+      location: '',
+    });
+    setShowModal(true);
+  };
+
+  const handleEditClick = (event: Event) => {
+    setEditingEvent(event);
+    setFormData({
+      title: event.title || '',
+      description: event.description || '',
+      start_date: event.start_date || event.event_date || '',
+      end_date: event.end_date || '',
+      location: event.location || '',
+    });
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = async (eventId: number | string) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este evento?')) {
+      try {
+        const success = await deleteEvent(eventId);
+        if (success) {
+          await loadEvents();
+        } else {
+          alert('Error al eliminar el evento');
+        }
+      } catch (error) {
+        console.error('Error deleting event:', error);
+        alert('Error al eliminar el evento');
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const eventData: Partial<EventDTO> = {
+        title: formData.title,
+        description: formData.description,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        location: formData.location,
+      };
+
+      if (editingEvent) {
+        const updated = await updateEvent(editingEvent.id, eventData);
+        if (updated) {
+          await loadEvents();
+          setShowModal(false);
+        } else {
+          alert('Error al actualizar el evento');
+        }
+      } else {
+        const created = await createEvent(eventData);
+        if (created) {
+          await loadEvents();
+          setShowModal(false);
+        } else {
+          alert('Error al crear el evento');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving event:', error);
+      alert('Error al guardar el evento');
+    }
+  };
+
   const parseDateSafe = (dateInput?: string | number | null) => {
     if (!dateInput && dateInput !== 0) return null;
     
@@ -28,7 +115,6 @@ export default function Events() {
     
     const dateString = String(dateInput);
     
-    // Si es formato YYYY-MM-DD, parsearlo como fecha local, no UTC
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       const [year, month, day] = dateString.split('-').map(Number);
       return new Date(year, month - 1, day);
@@ -53,7 +139,6 @@ export default function Events() {
     const de = parseDateSafe(end);
     
     if (ds && de) {
-      // Si las fechas son el mismo día, mostrar solo una vez
       if (ds.getFullYear() === de.getFullYear() && 
           ds.getMonth() === de.getMonth() && 
           ds.getDate() === de.getDate()) {
@@ -65,9 +150,9 @@ export default function Events() {
       if (sameMonth) {
         const startDay = ds.toLocaleDateString('es-ES', { day: 'numeric' });
         const tail = de.toLocaleDateString('es-ES', { ...opts });
-        return `${startDay}–${tail}`;
+        return `${startDay} - ${tail}`;
       }
-      return `${ds.toLocaleDateString('es-ES', opts)} – ${de.toLocaleDateString('es-ES', opts)}`;
+      return `${ds.toLocaleDateString('es-ES', opts)} - ${de.toLocaleDateString('es-ES', opts)}`;
     }
     return formatDate(start || end || undefined);
   };
@@ -89,6 +174,18 @@ export default function Events() {
             Descubre las actividades, torneos y momentos especiales que hemos compartido con nuestra comunidad.
           </p>
         </div>
+
+        {isAuthenticated && (
+          <div className="mb-6 flex justify-end">
+            <button
+              onClick={handleCreateClick}
+              className="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg transition-all"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Agregar Evento</span>
+            </button>
+          </div>
+        )}
 
         {events.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-lg">
@@ -114,8 +211,27 @@ export default function Events() {
               return (
                 <article
                   key={event.id}
-                  className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                  className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 relative"
                 >
+                  {isAuthenticated && (
+                    <div className="absolute top-2 right-2 flex space-x-2 z-10">
+                      <button
+                        onClick={() => handleEditClick(event)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-all"
+                        title="Editar"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(event.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-all"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+
                   {/* Imagen principal */}
                   <div className="relative w-full h-56 bg-gray-100">
                     {cover ? (
@@ -166,6 +282,111 @@ export default function Events() {
           </div>
         )}
       </div>
+
+      {/* Modal para crear/editar evento */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {editingEvent ? 'Editar Evento' : 'Nuevo Evento'}
+                </h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Título *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Descripción
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    rows={4}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha Inicio *
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha Fin *
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ubicación *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md"
+                  >
+                    {editingEvent ? 'Actualizar' : 'Crear'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
