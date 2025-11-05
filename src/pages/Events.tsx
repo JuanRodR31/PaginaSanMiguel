@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Plus, Edit, Trash2, X } from 'lucide-react';
-import { Event, getEvents, createEvent, updateEvent, deleteEvent, EventDTO } from '../lib/api';
+import { Calendar, MapPin, Plus, Edit, Trash2, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { Event, getEvents, createEvent, updateEvent, deleteEvent, uploadPhotosToEvent, EventDTO } from '../lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 export default function Events() {
@@ -18,6 +18,8 @@ export default function Events() {
     end_date: '',
     location: '',
   });
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   useEffect(() => {
     loadEvents();
@@ -43,6 +45,8 @@ export default function Events() {
       end_date: '',
       location: '',
     });
+    setSelectedImages([]);
+    setImagePreviews([]);
     setShowModal(true);
   };
 
@@ -55,6 +59,8 @@ export default function Events() {
       end_date: event.end_date || '',
       location: event.location || '',
     });
+    setSelectedImages([]);
+    setImagePreviews(event.photos || []);
     setShowModal(true);
   };
 
@@ -74,6 +80,22 @@ export default function Events() {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setSelectedImages(files);
+      
+      // Create previews
+      const previews = files.map(file => URL.createObjectURL(file));
+      setImagePreviews(prev => [...prev, ...previews]);
+    }
+  };
+
+  const removeImagePreview = (index: number) => {
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -85,9 +107,16 @@ export default function Events() {
         location: formData.location,
       };
 
+      let eventId: number | string;
+      
       if (editingEvent) {
         const updated = await updateEvent(editingEvent.id, eventData);
         if (updated) {
+          eventId = updated.id;
+          // Upload images if any
+          if (selectedImages.length > 0) {
+            await uploadPhotosToEvent(eventId, selectedImages);
+          }
           await loadEvents();
           setShowModal(false);
         } else {
@@ -96,6 +125,11 @@ export default function Events() {
       } else {
         const created = await createEvent(eventData);
         if (created) {
+          eventId = created.id;
+          // Upload images if any
+          if (selectedImages.length > 0) {
+            await uploadPhotosToEvent(eventId, selectedImages);
+          }
           await loadEvents();
           setShowModal(false);
         } else {
@@ -365,6 +399,52 @@ export default function Events() {
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Imágenes
+                  </label>
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Click para subir</span> o arrastra y suelta
+                        </p>
+                        <p className="text-xs text-gray-500">PNG, JPG, GIF (MAX. 10MB)</p>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+                  </div>
+                  
+                  {/* Image previews */}
+                  {imagePreviews.length > 0 && (
+                    <div className="mt-4 grid grid-cols-3 gap-4">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={preview.startsWith('blob:') ? preview : preview}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImagePreview(index)}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end space-x-4 pt-4">

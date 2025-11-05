@@ -56,14 +56,18 @@ async function tryFetchJson(url: string, opts?: RequestInit) {
     });
 
     // Manejo explícito de 401: no lanzar, registrar y opcionalmente redirigir a login
-    // Solo redirigir si es una operación que requiere autenticación (no GET)
     if (resp.status === 401) {
-      console.warn(`Unauthorized (401) when requesting ${url}`, opts?.method);
+      console.error(`Unauthorized (401) when requesting ${url}`, {
+        method: opts?.method,
+        status: resp.status,
+        statusText: resp.statusText,
+      });
       // Solo redirigir si no es un GET request (GET requests públicos no deberían requerir auth)
       if (typeof window !== 'undefined' && opts?.method && opts.method !== 'GET') {
         const path = window.location.pathname || '/';
         if (!path.startsWith('/login')) {
-          // redirige al login para re-autenticación (evita bucles)
+          console.warn('Session expired, redirecting to login');
+          localStorage.removeItem('token');
           window.location.assign('/login');
         }
       }
@@ -153,10 +157,50 @@ export async function updateEvent(id: number | string, event: Partial<EventDTO>)
 }
 
 export async function deleteEvent(id: number | string): Promise<boolean> {
+  const token = getAuthToken();
+  if (!token) {
+    console.error('No token available for deleteEvent');
+    return false;
+  }
+
   const result = await tryFetchJson(`/api/events/${id}`, {
     method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
   });
   return result !== null;
+}
+
+/**
+ * Upload images to an event
+ * @param eventId ID of the event
+ * @param images Array of image files
+ */
+export async function uploadPhotosToEvent(eventId: number | string, images: File[]): Promise<Event | null> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('No autenticado');
+  }
+
+  const formData = new FormData();
+  images.forEach((image) => {
+    formData.append('images', image);
+  });
+
+  const response = await fetch(`/api/events/${eventId}/photos`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    return normalizeEventDTO(data);
+  }
+  return null;
 }
 
 export function seedMocks({
@@ -309,24 +353,39 @@ export async function uploadPhotosToGallery(galleryId: number, images: File[]): 
     throw new Error('No autenticado');
   }
 
+  if (!images || images.length === 0) {
+    throw new Error('No se proporcionaron archivos');
+  }
+
   const formData = new FormData();
   images.forEach((image) => {
     formData.append('images', image);
   });
 
-  const response = await fetch(`/api/${galleryId}/photos`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    body: formData,
-  });
+  try {
+    const response = await fetch(`/api/${galleryId}/photos`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
 
-  if (response.ok) {
-    const data = await response.json();
-    return normalizeGallery(data);
+    if (response.ok) {
+      const data = await response.json();
+      return normalizeGallery(data);
+    } else {
+      // Intentar leer el mensaje de error del backend
+      const errorText = await response.text().catch(() => 'Error desconocido');
+      console.error(`Error uploading photos (${response.status}):`, errorText);
+      throw new Error(errorText || `Error ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Error inesperado al subir fotos');
   }
-  return null;
 }
 
 /**

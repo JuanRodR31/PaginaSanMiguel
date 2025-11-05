@@ -64,11 +64,38 @@ export default function Videos() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0 || !galleryId) return;
+    if (!files || files.length === 0) {
+      alert('Por favor selecciona al menos una imagen');
+      return;
+    }
+    
+    if (!galleryId) {
+      alert('Error: No se encontró la galería. Por favor recarga la página.');
+      return;
+    }
 
     try {
       setUploading(true);
       const fileArray = Array.from(files);
+      
+      // Validar tipos de archivo en el frontend también
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const invalidFiles = fileArray.filter(file => !allowedTypes.includes(file.type));
+      
+      if (invalidFiles.length > 0) {
+        alert(`Tipo de archivo no permitido. Solo se permiten: JPEG, PNG, GIF, WEBP`);
+        return;
+      }
+      
+      // Validar tamaño (10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const largeFiles = fileArray.filter(file => file.size > maxSize);
+      
+      if (largeFiles.length > 0) {
+        alert(`Algunos archivos son demasiado grandes. Tamaño máximo: 10MB`);
+        return;
+      }
+      
       const result = await uploadPhotosToGallery(galleryId, fileArray);
       
       if (result) {
@@ -79,11 +106,14 @@ export default function Videos() {
       }
     } catch (error) {
       console.error('Error uploading photos:', error);
-      alert('Error al subir las fotos');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al subir las fotos';
+      alert(`Error: ${errorMessage}`);
     } finally {
       setUploading(false);
       // Reset input
-      e.target.value = '';
+      if (e.target) {
+        e.target.value = '';
+      }
     }
   };
 
