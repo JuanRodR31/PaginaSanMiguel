@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AuthProvider } from './context/AuthContext';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -7,6 +8,7 @@ import Players from './pages/Players';
 import Events from './pages/Events';
 import Videos from './pages/Videos';
 import Donate from './pages/Donate';
+import Login from './pages/Login';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -25,17 +27,21 @@ function App() {
         return <Videos />;
       case 'donate':
         return <Donate />;
+      case 'login':
+        return <Login onNavigate={setCurrentPage} />;
       default:
         return <Home onNavigate={setCurrentPage} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />
-      <main>{renderPage()}</main>
-      <Footer />
-    </div>
+    <AuthProvider>
+      <div className="min-h-screen bg-white">
+        <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />
+        <main>{renderPage()}</main>
+        <Footer />
+      </div>
+    </AuthProvider>
   );
 }
 
